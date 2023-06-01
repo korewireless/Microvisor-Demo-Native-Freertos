@@ -18,6 +18,7 @@ static double   MCP9808_get_temp(uint8_t* data);
 /*
  * GLOBALS
  */
+// I2C-related values (defined in `i2c.c`)
 extern I2C_HandleTypeDef i2c;
 
 uint16_t    limit_critical = DEFAULT_TEMP_LOWER_LIMIT_C;
@@ -50,7 +51,7 @@ bool MCP9808_init(void) {
     // Bytes to integers
     const uint16_t mid_value = (mid_data[0] << 8) | mid_data[1];
     const uint16_t did_value = (did_data[0] << 8) | did_data[1];
-    server_log("MCP9808 Manufacturer ID: 0x%04x, Device ID: 0x%04x", mid_value, did_value);
+    //server_log("MCP9808 Manufacturer ID: 0x%04x, Device ID: 0x%04x", mid_value, did_value);
 
     // Return false on data error
     if (mid_value != 0x0054 || did_value != 0x0400) return false;

@@ -35,18 +35,16 @@ TaskHandle_t handle_task_alert = NULL;
 // FreeRTOS Timers
 TimerHandle_t alert_timer = NULL;
 
-// Microvisor app logging buffer
-static uint8_t log_buffer[LOG_BUFFER_SIZE_B] __attribute__ ((aligned(512)));
-
-// I2C-related values
+// I2C-related values (defined in `i2c.c`)
 extern I2C_HandleTypeDef i2c;
+
 
 /**
  *  Theses variables may be changed by interrupt handler code,
  *  so we mark them as `volatile` to ensure compiler optimization
  *  doesn't render them immutable at runtime
  */
-       volatile bool    use_i2c = false;
+static volatile bool    use_i2c = false;
 static volatile double  current_temp = 0.0;
 static volatile bool    got_mcp9808 = false;
 
@@ -55,9 +53,6 @@ static volatile bool    got_mcp9808 = false;
  *  @brief The application entry point.
  */
 int main(void) {
-
-    // Set up Microvisor app logging
-    mvServerLoggingInit(log_buffer, sizeof(log_buffer));
 
     // Initialise the STM32U5 HAL
     HAL_Init();
@@ -83,6 +78,9 @@ int main(void) {
 
         // Get a temperature reading
         current_temp = MCP9808_read_temp();
+        server_log("MCP9808 ready");
+    } else {
+        server_error("MCP9808 not ready");
     }
 
     // Set up two FreeRTOS tasks
@@ -90,19 +88,19 @@ int main(void) {
     //      Task stack sizes are allocated in the FreeRTOS heap, set in `FreeRTOSConfig.h`
     BaseType_t status_task_led = xTaskCreate(task_led,
                                               "LED_TASK",
-                                              256,
+                                              1024,
                                               NULL,
                                               1,
                                               &handle_task_led);
     BaseType_t status_task_sensor = xTaskCreate(task_sensor,
                                               "WORK_TASK",
-                                              1024,
+                                              2048,
                                               NULL,
                                               1,
                                               &handle_task_sensor);
     BaseType_t status_task_alert = xTaskCreate(task_alert,
                                               "ALERT_TASK",
-                                              256,
+                                              1024,
                                               NULL,
                                               1,
                                               &handle_task_alert);
@@ -196,7 +194,7 @@ static void task_led(void *argument) {
 
     while(1) {
         // Toggle the NDB's USER LED
-        //HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
+        // HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
 
         // Yield execution for a period
         vTaskDelay(led_pause_ticks);
@@ -218,8 +216,9 @@ static void task_sensor(void *argument) {
         // Output the current reading
         if (got_mcp9808) {
             current_temp = MCP9808_read_temp();
-            server_log("Current temperature: %.2f°C", current_temp);
         }
+
+        server_log("Current temperature: %.2f°C", current_temp);
 
         // Yield execution for a period
         vTaskDelay(ping_pause_ticks);

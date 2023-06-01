@@ -26,8 +26,8 @@ static uint32_t log_state = USER_HANDLE_LOGGING_OFF;
 
 // Entities for local serial logging
 // Declared in `uart_logging.c`
-extern UART_HandleTypeDef uart;
 #ifdef UART_LOGGING_H
+extern UART_HandleTypeDef uart;
 static bool uart_available = false;
 #endif
 
@@ -43,9 +43,11 @@ static void log_start(void) {
         // Initiate the Microvisor logging service
         log_service_setup();
 
+#ifdef UART_LOGGING_H
 #if ENABLE_UART_DEBUGGING == true
         // Establish UART logging
         uart_available = log_uart_init();
+#endif
 #endif
     }
 }

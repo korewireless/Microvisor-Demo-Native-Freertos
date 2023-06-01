@@ -114,15 +114,15 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef *i2c) {
     // Configure the GPIO pins for I2C
     // Pin PB6 - SCL
     // Pin PB9 - SDA
-    GPIO_InitTypeDef gpioConfig = { 0 };
-    gpioConfig.Pin       = GPIO_PIN_6 | GPIO_PIN_9;
-    gpioConfig.Mode      = GPIO_MODE_AF_OD;
-    gpioConfig.Pull      = GPIO_NOPULL;
-    gpioConfig.Speed     = GPIO_SPEED_FREQ_LOW;
-    gpioConfig.Alternate = GPIO_AF4_I2C1;
+    GPIO_InitTypeDef i2c_config = { 0 };
+    i2c_config.Pin       = GPIO_PIN_6 | GPIO_PIN_9;
+    i2c_config.Mode      = GPIO_MODE_AF_OD;
+    i2c_config.Pull      = GPIO_NOPULL;
+    i2c_config.Speed     = GPIO_SPEED_FREQ_LOW;
+    i2c_config.Alternate = GPIO_AF4_I2C1;
 
     // Initialize the pins with the setup data
-    HAL_GPIO_Init(I2C_GPIO_PORT, &gpioConfig);
+    HAL_GPIO_Init(I2C_GPIO_PORT, &i2c_config);
 
     // Enable the I2C1 clock
     __HAL_RCC_I2C1_CLK_ENABLE();
