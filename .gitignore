@@ -1,0 +1,8 @@
+*.o
+!uapi/*.o
+*.d
+*.su
+*.sw[pno]
+*build/*
+*.xcworkspace/*
+.DS_Store
