@@ -88,7 +88,7 @@ int main(void) {
     //      Task stack sizes are allocated in the FreeRTOS heap, set in `FreeRTOSConfig.h`
     BaseType_t status_task_led = xTaskCreate(task_led,
                                               "LED_TASK",
-                                              1024,
+                                              512,
                                               NULL,
                                               1,
                                               &handle_task_led);
@@ -100,7 +100,7 @@ int main(void) {
                                               &handle_task_sensor);
     BaseType_t status_task_alert = xTaskCreate(task_alert,
                                               "ALERT_TASK",
-                                              1024,
+                                              512,
                                               NULL,
                                               1,
                                               &handle_task_alert);
