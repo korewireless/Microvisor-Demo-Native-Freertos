@@ -176,7 +176,7 @@ static void GPIO_init(void) {
     HAL_GPIO_Init(MCP_GPIO_PORT, &mcp_init_data);
 
     // Set up the NVIC to process interrupts
-    HAL_NVIC_SetPriority(MCP_INT_IRQ, 3, 0);
+    HAL_NVIC_SetPriority(MCP_INT_IRQ, 4, 0);
     HAL_NVIC_EnableIRQ(MCP_INT_IRQ);
 }
 
