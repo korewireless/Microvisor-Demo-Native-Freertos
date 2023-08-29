@@ -45,8 +45,9 @@ extern I2C_HandleTypeDef i2c;
  *  doesn't render them immutable at runtime
  */
 static volatile bool    use_i2c = false;
-static volatile double  current_temp = 0.0;
 static volatile bool    got_mcp9808 = false;
+static volatile bool    alert_fired = false;
+static volatile double  current_temp = 0.0;
 
 
 /**
@@ -75,6 +76,8 @@ int main(void) {
         MCP9808_set_lower_limit(TEMP_LOWER_LIMIT_C);
         MCP9808_set_upper_limit(TEMP_UPPER_LIMIT_C);
         MCP9808_set_critical_limit(TEMP_CRIT_LIMIT_C);
+        // And enable alerts (off by default)
+        MCP9808_clear_alert(true);
 
         // Get a temperature reading
         current_temp = MCP9808_read_temp();
@@ -88,7 +91,7 @@ int main(void) {
     //      Task stack sizes are allocated in the FreeRTOS heap, set in `FreeRTOSConfig.h`
     BaseType_t status_task_led = xTaskCreate(task_led,
                                               "LED_TASK",
-                                              512,
+                                              1024,
                                               NULL,
                                               1,
                                               &handle_task_led);
@@ -98,9 +101,10 @@ int main(void) {
                                               NULL,
                                               1,
                                               &handle_task_sensor);
+
     BaseType_t status_task_alert = xTaskCreate(task_alert,
                                               "ALERT_TASK",
-                                              512,
+                                              1024,
                                               NULL,
                                               1,
                                               &handle_task_alert);
@@ -159,7 +163,7 @@ static void GPIO_init(void) {
     HAL_GPIO_WritePin(LED_GPIO_PORT, LED_GPIO_PIN, GPIO_PIN_RESET);
     HAL_GPIO_WritePin(MCP_GPIO_PORT, MCP_INT_PIN, GPIO_PIN_RESET);
 
-    // Configure GPIO pin for the Nucleo's USER LED: PA5
+    // Configure GPIO pin for the Nucleo's USER LED
     GPIO_InitTypeDef led_init_data = {0};
     led_init_data.Pin   = LED_GPIO_PIN;
     led_init_data.Mode  = GPIO_MODE_OUTPUT_PP;
@@ -167,16 +171,16 @@ static void GPIO_init(void) {
     led_init_data.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     HAL_GPIO_Init(LED_GPIO_PORT, &led_init_data);
 
-    // Configure GPIO pin for the MCP9808 interrupt: PF3
+    // Configure GPIO pin for the MCP9808 interrupt
     GPIO_InitTypeDef mcp_init_data = {0};
     mcp_init_data.Pin   = MCP_INT_PIN;
-    mcp_init_data.Mode  = GPIO_MODE_IT_RISING;
-    mcp_init_data.Pull  = GPIO_NOPULL;
+    mcp_init_data.Mode  = GPIO_MODE_IT_FALLING;
+    mcp_init_data.Pull  = GPIO_PULLUP;
     mcp_init_data.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     HAL_GPIO_Init(MCP_GPIO_PORT, &mcp_init_data);
 
     // Set up the NVIC to process interrupts
-    HAL_NVIC_SetPriority(MCP_INT_IRQ, 4, 0);
+    HAL_NVIC_SetPriority(MCP_INT_IRQ, 0, 0);
     HAL_NVIC_EnableIRQ(MCP_INT_IRQ);
 }
 
@@ -194,7 +198,7 @@ static void task_led(void *argument) {
 
     while(1) {
         // Toggle the NDB's USER LED
-        // HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
+        if (!alert_fired) HAL_GPIO_TogglePin(LED_GPIO_PORT, LED_GPIO_PIN);
 
         // Yield execution for a period
         vTaskDelay(led_pause_ticks);
@@ -288,6 +292,7 @@ static void timer_fired_callback(TimerHandle_t timer) {
     if (current_temp < (double)TEMP_UPPER_LIMIT_C) {
         // Clear the LED
         HAL_GPIO_WritePin(LED_GPIO_PORT, LED_GPIO_PIN, GPIO_PIN_RESET);
+        alert_fired = false;
 
         // Clear the timer
         alert_timer = NULL;
@@ -309,7 +314,7 @@ static void timer_fired_callback(TimerHandle_t timer) {
 /**
  * @brief Interrupt handler as specified by the STM32U5 HAL.
  */
-void EXTI3_IRQHandler(void) {
+void EXTI9_IRQHandler(void) {
 
     HAL_GPIO_EXTI_IRQHandler(MCP_INT_PIN);
 }
@@ -327,6 +332,7 @@ static inline void isr_worker(void) {
     // Disable the IRQ to prevent repeated alerts
     // (we will re-enable the IRQ when the alert is over)
     HAL_NVIC_DisableIRQ(MCP_INT_IRQ);
+    alert_fired = true;
 
     // Exit to FreeRTOS context switch if necessary
     portYIELD_FROM_ISR(higher_priority_task_woken);
@@ -351,5 +357,11 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin) {
  */
 void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin) {
 
-    isr_worker();
+    //isr_worker();
+}
+
+
+void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+
+    server_log("OVERFLOW: %s", pcTaskName);
 }

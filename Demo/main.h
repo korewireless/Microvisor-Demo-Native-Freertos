@@ -47,9 +47,9 @@
 #define     LED_GPIO_PORT               GPIOA
 #define     LED_GPIO_PIN                GPIO_PIN_5
 
-#define     MCP_GPIO_PORT               GPIOF
-#define     MCP_INT_PIN                 GPIO_PIN_3
-#define     MCP_INT_IRQ                 EXTI3_IRQn
+#define     MCP_GPIO_PORT               GPIOA
+#define     MCP_INT_PIN                 GPIO_PIN_9
+#define     MCP_INT_IRQ                 EXTI9_IRQn
 
 #define     TEMP_LOWER_LIMIT_C          10
 #define     TEMP_UPPER_LIMIT_C          28

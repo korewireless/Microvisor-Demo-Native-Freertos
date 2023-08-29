@@ -40,12 +40,12 @@ bool MCP9808_init(void) {
 
     // Read bytes from the sensor: MID...
     uint8_t cmd = MCP9808_REG_MANUF_ID;
-    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &cmd,      1, 100);
+    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &cmd,     1, 100);
     HAL_I2C_Master_Receive(&i2c,  MCP9808_ADDR << 1, mid_data, 2, 100);
 
     // ...DID
     cmd = MCP9808_REG_DEVICE_ID;
-    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &cmd,      1, 100);
+    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &cmd,     1, 100);
     HAL_I2C_Master_Receive(&i2c,  MCP9808_ADDR << 1, did_data, 2, 100);
 
     // Bytes to integers
@@ -115,7 +115,7 @@ void MCP9808_clear_alert(bool do_enable) {
     HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, check_data, 2, 500);
 
     // Check the two values: READ LSB == WRITE & 0xDF
-    if ((config_data[2] & 0xDF) != check_data[1]) {
+    if (((config_data[2] & 0xDF) != check_data[1]) && do_enable) {
         server_error("MCP9809 alert config mismatch. SET: %02x READ: %02x\n",  config_data[2],  check_data[1]);
     }
 }
