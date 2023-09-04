@@ -90,24 +90,24 @@ int main(void) {
     // NOTE Argument #3 is the task stack size in words not bytes, ie. 512 -> 2048 bytes
     //      Task stack sizes are allocated in the FreeRTOS heap, set in `FreeRTOSConfig.h`
     BaseType_t status_task_led = xTaskCreate(task_led,
-                                              "LED_TASK",
-                                              1024,
-                                              NULL,
-                                              1,
-                                              &handle_task_led);
+                                             "LED_TASK",
+                                             1024,
+                                             NULL,
+                                             1,
+                                             &handle_task_led);
     BaseType_t status_task_sensor = xTaskCreate(task_sensor,
-                                              "WORK_TASK",
-                                              2048,
-                                              NULL,
-                                              1,
-                                              &handle_task_sensor);
+                                               "WORK_TASK",
+                                               2048,
+                                               NULL,
+                                               1,
+                                               &handle_task_sensor);
 
     BaseType_t status_task_alert = xTaskCreate(task_alert,
-                                              "ALERT_TASK",
-                                              1024,
-                                              NULL,
-                                              1,
-                                              &handle_task_alert);
+                                               "ALERT_TASK",
+                                               1024,
+                                               NULL,
+                                               1,
+                                               &handle_task_alert);
 
     if (status_task_led == pdPASS && status_task_sensor == pdPASS && status_task_alert == pdPASS) {
         // Start the scheduler
@@ -187,7 +187,7 @@ static void GPIO_init(void) {
 
 /**
  * @brief  Function implementing the LED flasher task.
- *         NOTE Currently does nothing.
+ *         Blinks the USER LED if there is no alert in progress.
  *
  * @param  argument: Not used
  */
@@ -208,6 +208,7 @@ static void task_led(void *argument) {
 
 /**
  * @brief  Function implementing the MCP9808 temperature read task.
+ *         Gets and logs the current temperature.
  *
  * @param  argument: Not used
  */
@@ -241,10 +242,10 @@ static void task_alert(void* argument) {
         // Block until a notification arrives
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
-        // Show the IRQ was hit
+        // Show the IRQ was hit by lighting the USER LED
         HAL_GPIO_WritePin(LED_GPIO_PORT, LED_GPIO_PIN, GPIO_PIN_SET);
         if (got_mcp9808) MCP9808_clear_alert(false);
-        server_log("IRQ detected");
+        server_log("Alert detected");
 
         // Set and start a timer to clear the alert
         set_alert_timer();
@@ -267,6 +268,8 @@ static void log_device_info(void) {
 
 /**
  * @brief Set and start a timer to clear the current alert.
+ *        The function `timer_fired_callback()` is called when
+ *        the timer fires.
  */
 static void set_alert_timer(void) {
 
@@ -346,7 +349,7 @@ static inline void isr_worker(void) {
  */
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin) {
 
-    isr_worker();
+    //isr_worker();
 }
 
 
@@ -357,7 +360,7 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin) {
  */
 void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin) {
 
-    //isr_worker();
+    isr_worker();
 }
 
 

@@ -2,13 +2,13 @@
 
 This repo provides a basic demonstration of user application firmware based on the [FreeRTOS](https://freertos.org/) real-time operating system and which will run on the “non-secure” side of Microvisor.
 
-Unlike [our primary FreeRTOS demo](), this code does not use [ARM CMSIS-RTOS API](https://github.com/ARM-software/CMSIS_5) as an intermediary between the application and FreeRTOS. Instead, it uses native FreeRTOS calls.
+Unlike [our primary FreeRTOS demo](https://github.com/twilio/twilio-microvisor-freertos), this code does not use [ARM CMSIS-RTOS API](https://github.com/ARM-software/CMSIS_5) as an intermediary between the application and FreeRTOS. Instead, it uses native FreeRTOS calls.
 
 ![The Nucleo board and attached MCP9808](./images/mv-mcp9808.png)
 
 The code uses an MCP9808 temperature sensor to provide a thermal readout every 15 seconds. If the ambient temperature rises above 28°C (set in `main.h`), the MCP9808’s ALERT pin asserts, triggering an interrupt on the Microvisor Nucleo Development Board’s PF3 pin. FreeRTOS’ task notification mechanism is used to signal a specific task from the Interrupt Service Routine to light the USER LED. FreeRTOS’ timer mechanism is used to periodically check for the end of the alert condition.
 
-Most of the project files can be found in the [Demo/](Demo/) directory. The [ST_Code/](ST_Code/) directory contains required components that are not part of Twilio Microvisor STM32U5 HAL, which this code accesses as a submodule. FreeRTOS is also incorporated as a submodule. The `FreeRTOSConfig.h` and `stm32u5xx_hal_conf.h` configuration files are located in the [Config/](Config/) directory.
+Most of the project files can be found in the [Demo/](Demo/) directory. The [ST_Code/](ST_Code/) directory contains required components that are not part of the Microvisor STM32U5 HAL, which this code accesses as a submodule. FreeRTOS is also incorporated as a submodule. The `FreeRTOSConfig.h` and `stm32u5xx_hal_conf.h` configuration files are located in the [Config/](Config/) directory.
 
 ## Build with Docker (macOS)
 
@@ -85,8 +85,8 @@ twilio profiles:use <YOUR_PROFILE_NAME>
 ### Build and Deploy the Demo
 
 ```shell
-git clone https://github.com/TwilioDevEd/microvisor-native-freertos-demo
-cd microvisor-native-freertos-demo
+git clone https://github.com/korewireless/Microvisor-Demo-Native-Freertos
+cd Microvisor-Demo-Native-Freertos
 twilio microvisor:deploy . --devicesid ${MV_DEVICE_SID} --log
 ```
 
@@ -118,10 +118,6 @@ Update the repo’s submodules to their remotes’ latest commits with:
 cd /path/to/microvisor-native-freertos-demo
 git submodule update --init --remote --recursive
 ```
-
-## Support/Feedback
-
-Please contact [Twilio Support](https://support.twilio.com/).
 
 ## More Samples
 

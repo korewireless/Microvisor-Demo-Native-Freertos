@@ -10,11 +10,6 @@
 #define _MCP9808_HEADER_
 
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-
 /*
  *  CONSTANTS
  */
@@ -38,6 +33,11 @@ extern "C" {
 #define DEFAULT_TEMP_LOWER_LIMIT_C  10
 #define DEFAULT_TEMP_UPPER_LIMIT_C  28
 #define DEFAULT_TEMP_CRIT_LIMIT_C   50
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 
 /*
