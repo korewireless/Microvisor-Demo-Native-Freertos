@@ -157,11 +157,10 @@ static void GPIO_init(void) {
 
     // Enable the clock for GPIO ports A (USER LED), F (MCP9808 INT PIN)
     __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOF_CLK_ENABLE();
+    __HAL_RCC_GPIOD_CLK_ENABLE();
 
     // Clear the LED
     HAL_GPIO_WritePin(LED_GPIO_PORT, LED_GPIO_PIN, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(MCP_GPIO_PORT, MCP_INT_PIN, GPIO_PIN_RESET);
 
     // Configure GPIO pin for the Nucleo's USER LED
     GPIO_InitTypeDef led_init_data = {0};
@@ -174,14 +173,17 @@ static void GPIO_init(void) {
     // Configure GPIO pin for the MCP9808 interrupt
     GPIO_InitTypeDef mcp_init_data = {0};
     mcp_init_data.Pin   = MCP_INT_PIN;
-    mcp_init_data.Mode  = GPIO_MODE_IT_FALLING;
-    mcp_init_data.Pull  = GPIO_PULLUP;
-    mcp_init_data.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+    mcp_init_data.Mode  = GPIO_MODE_IT_RISING_FALLING;
+    mcp_init_data.Pull  = GPIO_NOPULL;
     HAL_GPIO_Init(MCP_GPIO_PORT, &mcp_init_data);
 
     // Set up the NVIC to process interrupts
-    HAL_NVIC_SetPriority(MCP_INT_IRQ, 0, 0);
+    HAL_NVIC_SetPriority(MCP_INT_IRQ, 3, 0);
+    HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
     HAL_NVIC_EnableIRQ(MCP_INT_IRQ);
+
+    //mvSetFastInterrupt(MCP_INT_IRQ);
+    //mvEnableFastInterrupt(MCP_INT_IRQ);
 }
 
 
@@ -215,7 +217,7 @@ static void task_led(void *argument) {
 static void task_sensor(void *argument) {
 
     // Get the pause period in ticks from a millisecond value
-    const TickType_t ping_pause_ticks = pdMS_TO_TICKS(DEBUG_PING_PAUSE_MS);
+    const TickType_t ping_pause_ticks = pdMS_TO_TICKS(DEBUG_SENSOR_PAUSE_MS);
 
     while(1) {
         // Output the current reading
@@ -223,7 +225,8 @@ static void task_sensor(void *argument) {
             current_temp = MCP9808_read_temp();
         }
 
-        server_log("Current temperature: %.2f°C", current_temp);
+        GPIO_PinState state = HAL_GPIO_ReadPin(MCP_GPIO_PORT, MCP_INT_PIN);
+        server_log("Current temperature: %.2f°C (%i)", current_temp, state == GPIO_PIN_SET);
 
         // Yield execution for a period
         vTaskDelay(ping_pause_ticks);
@@ -295,7 +298,7 @@ static void timer_fired_callback(TimerHandle_t timer) {
     if (current_temp < (double)TEMP_UPPER_LIMIT_C) {
         // Clear the LED
         HAL_GPIO_WritePin(LED_GPIO_PORT, LED_GPIO_PIN, GPIO_PIN_RESET);
-        alert_fired = false;
+        //alert_fired = false;
 
         // Clear the timer
         alert_timer = NULL;
@@ -317,9 +320,33 @@ static void timer_fired_callback(TimerHandle_t timer) {
 /**
  * @brief Interrupt handler as specified by the STM32U5 HAL.
  */
-void EXTI9_IRQHandler(void) {
+void EXTI8_IRQHandler(void) {
 
     HAL_GPIO_EXTI_IRQHandler(MCP_INT_PIN);
+}
+
+
+/**
+ * @brief IRQ handler as specified in HAL doc.
+ *
+ * @param GPIO_Pin The pin the triggered the IRQ
+ */
+void HAL_GPIO_EXTI_Falling_Callback(uint16_t pin) {
+
+    server_log("IRQ");
+    if (pin == MCP_INT_PIN) isr_worker();
+}
+
+
+/**
+ * @brief IRQ handler as specified in HAL doc.
+ *
+ * @param GPIO_Pin The pin the triggered the IRQ
+ */
+void HAL_GPIO_EXTI_Rising_Callback(uint16_t pin) {
+
+    server_log("IRQ");
+    if (pin == MCP_INT_PIN) isr_worker();
 }
 
 
@@ -339,28 +366,6 @@ static inline void isr_worker(void) {
 
     // Exit to FreeRTOS context switch if necessary
     portYIELD_FROM_ISR(higher_priority_task_woken);
-}
-
-
-/**
- * @brief IRQ handler as specified in HAL doc.
- *
- * @param GPIO_Pin The pin the triggered the IRQ
- */
-void HAL_GPIO_EXTI_Falling_Callback(uint16_t GPIO_Pin) {
-
-    //isr_worker();
-}
-
-
-/**
- * @brief IRQ handler as specified in HAL doc.
- *
- * @param GPIO_Pin The pin the triggered the IRQ
- */
-void HAL_GPIO_EXTI_Rising_Callback(uint16_t GPIO_Pin) {
-
-    isr_worker();
 }
 
 

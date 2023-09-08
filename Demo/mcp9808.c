@@ -51,13 +51,10 @@ bool MCP9808_init(void) {
     // Bytes to integers
     const uint16_t mid_value = (mid_data[0] << 8) | mid_data[1];
     const uint16_t did_value = (did_data[0] << 8) | did_data[1];
-    //server_log("MCP9808 Manufacturer ID: 0x%04x, Device ID: 0x%04x", mid_value, did_value);
+    server_log("MCP9808 Manufacturer ID: 0x%04x, Device ID: 0x%04x", mid_value, did_value);
 
     // Return false on data error
     if (mid_value != 0x0054 || did_value != 0x0400) return false;
-
-    // Clear and enable the alert pin
-    MCP9808_clear_alert(true);
     return true;
 }
 
@@ -98,10 +95,13 @@ void MCP9808_clear_alert(bool do_enable) {
     HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &reg, 1, 200);
     HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, &config_data[1], 2, 500);
 
-    // Set LSB bit 5 to clear the interrupt, and write it back
+    // Set LSB bit 5 to clear the interrupt, 
+    //         bit 1 to set the active high,
+    //         bit 0 to set the interrupt mode
     config_data[0] = reg;
-    config_data[2] = 0x23;
-
+    //config_data[2] = 0x20;
+    // MCP9808_CONFIG_CLR_ALRT_INT | 
+    // Enable/disable the alert
     if (do_enable) {
         config_data[2] |= MCP9808_CONFIG_ENABLE_ALRT;
     }
@@ -115,7 +115,7 @@ void MCP9808_clear_alert(bool do_enable) {
     HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, check_data, 2, 500);
 
     // Check the two values: READ LSB == WRITE & 0xDF
-    if (((config_data[2] & 0xDF) != check_data[1]) && do_enable) {
+    if (((config_data[2] & 0x0F) != check_data[1]) && do_enable) {
         server_error("MCP9809 alert config mismatch. SET: %02x READ: %02x\n",  config_data[2],  check_data[1]);
     }
 }
@@ -129,6 +129,7 @@ void MCP9808_clear_alert(bool do_enable) {
 void MCP9808_set_upper_limit(uint16_t upper_temp) {
     limit_upper = upper_temp;
     MCP9808_set_temp_limit(MCP9808_REG_UPPER_TEMP, upper_temp);
+    server_log("MCP9808 Hi Temp Set: %02i", upper_temp);
 }
 
 
@@ -140,6 +141,7 @@ void MCP9808_set_upper_limit(uint16_t upper_temp) {
 void MCP9808_set_critical_limit(uint16_t critical_temp) {
     limit_critical = critical_temp;
     MCP9808_set_temp_limit(MCP9808_REG_CRIT_TEMP, critical_temp);
+    server_log("MCP9808 Crit Temp Set: %02i", critical_temp);
 }
 
 
@@ -151,6 +153,7 @@ void MCP9808_set_critical_limit(uint16_t critical_temp) {
 void MCP9808_set_lower_limit(uint16_t lower_temp) {
     limit_lower = lower_temp;
     MCP9808_set_temp_limit(MCP9808_REG_LOWER_TEMP, lower_temp);
+    server_log("MCP9808 Lo Temp Set: %02i", lower_temp);
 }
 
 

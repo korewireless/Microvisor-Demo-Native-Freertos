@@ -38,7 +38,7 @@
 /*
  * CONSTANTS
  */
-#define     DEBUG_PING_PAUSE_MS         15000
+#define     DEBUG_SENSOR_PAUSE_MS       10000
 #define     DEBUG_LED_PAUSE_MS          250
 #define     ALERT_DISPLAY_PERIOD_MS     10000
 
@@ -47,9 +47,9 @@
 #define     LED_GPIO_PORT               GPIOA
 #define     LED_GPIO_PIN                GPIO_PIN_5
 
-#define     MCP_GPIO_PORT               GPIOA
-#define     MCP_INT_PIN                 GPIO_PIN_9
-#define     MCP_INT_IRQ                 EXTI9_IRQn
+#define     MCP_GPIO_PORT               GPIOD
+#define     MCP_INT_PIN                 GPIO_PIN_8
+#define     MCP_INT_IRQ                 EXTI8_IRQn
 
 #define     TEMP_LOWER_LIMIT_C          10
 #define     TEMP_UPPER_LIMIT_C          28
