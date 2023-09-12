@@ -10,12 +10,6 @@
 #define _I2C_HEADER_
 
 
-/*
- * CONSTANTS
- */
-#define     I2C_GPIO_PORT           GPIOB
-
-
 #ifdef __cplusplus
 extern "C" {
 #endif

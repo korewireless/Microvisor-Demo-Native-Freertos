@@ -115,7 +115,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef *i2c) {
     // Pin PB6 - SCL
     // Pin PB9 - SDA
     GPIO_InitTypeDef i2c_config = { 0 };
-    i2c_config.Pin       = GPIO_PIN_6 | GPIO_PIN_9;
+    i2c_config.Pin       = I2C_SCL_PIN_6 | I2C_SDA_PIN_9;
     i2c_config.Mode      = GPIO_MODE_AF_OD;
     i2c_config.Pull      = GPIO_NOPULL;
     i2c_config.Speed     = GPIO_SPEED_FREQ_LOW;

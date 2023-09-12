@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.14)
 # Set application data
 set(APP "Microvisor Native FreeRTOS Demo")
 set(VERSION_NUMBER "1.0.0")
-set(BUILD_NUMBER "132")
+set(BUILD_NUMBER "1")
 
 message("Building ${APP} ${VERSION_NUMBER} build ${BUILD_NUMBER}")
 
@@ -15,8 +15,8 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 add_executable(${PROJECT_NAME}
     main.c
     i2c.c
-    mcp9808.c
     logging.c
+    mcp9808.c
     stm32u5xx_hal_timebase_tim_template.c
 )
 

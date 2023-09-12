@@ -14,13 +14,12 @@
  * STATIC PROTOTYPES
  */
 static void         system_clock_config(void);
-static void         GPIO_init(void);
+static void         init_gpio(void);
 static void         task_led(void *argument);
 static void         task_sensor(void *argument);
 static void         task_alert(void* argument);
 static void         set_alert_timer(void);
 static void         timer_fired_callback(TimerHandle_t timer);
-static inline void  isr_worker(void);
 static void         log_device_info(void);
 
 
@@ -32,22 +31,21 @@ TaskHandle_t handle_task_sensor = NULL;
 TaskHandle_t handle_task_led = NULL;
 TaskHandle_t handle_task_alert = NULL;
 
-// FreeRTOS Timers
-TimerHandle_t alert_timer = NULL;
-
 // I2C-related values (defined in `i2c.c`)
 extern I2C_HandleTypeDef i2c;
 
+static bool    use_i2c = false;
+static bool    got_mcp9808 = false;
 
 /**
  *  Theses variables may be changed by interrupt handler code,
  *  so we mark them as `volatile` to ensure compiler optimization
  *  doesn't render them immutable at runtime
  */
-static volatile bool    use_i2c = false;
-static volatile bool    got_mcp9808 = false;
 static volatile bool    alert_fired = false;
 static volatile double  current_temp = 0.0;
+// FreeRTOS Timers
+volatile TimerHandle_t alert_timer = NULL;
 
 
 /**
@@ -66,7 +64,7 @@ int main(void) {
 
     // Initialise hardware: the LED and alert pins,
     // and the I2C bus to which the MCP9808 is connected.
-    GPIO_init();
+    init_gpio();
     use_i2c = I2C_init();
     if (use_i2c) got_mcp9808 = MCP9808_init();
 
@@ -81,7 +79,6 @@ int main(void) {
 
         // Get a temperature reading
         current_temp = MCP9808_read_temp();
-        server_log("MCP9808 ready");
     } else {
         server_error("MCP9808 not ready");
     }
@@ -89,34 +86,17 @@ int main(void) {
     // Set up two FreeRTOS tasks
     // NOTE Argument #3 is the task stack size in words not bytes, ie. 512 -> 2048 bytes
     //      Task stack sizes are allocated in the FreeRTOS heap, set in `FreeRTOSConfig.h`
-    BaseType_t status_task_led = xTaskCreate(task_led,
-                                             "LED_TASK",
-                                             1024,
-                                             NULL,
-                                             1,
-                                             &handle_task_led);
-    BaseType_t status_task_sensor = xTaskCreate(task_sensor,
-                                               "WORK_TASK",
-                                               2048,
-                                               NULL,
-                                               1,
-                                               &handle_task_sensor);
-
-    BaseType_t status_task_alert = xTaskCreate(task_alert,
-                                               "ALERT_TASK",
-                                               1024,
-                                               NULL,
-                                               1,
-                                               &handle_task_alert);
+    BaseType_t status_task_led = xTaskCreate(task_led, "LED_TASK", 1024, NULL, 1, &handle_task_led);
+    BaseType_t status_task_sensor = xTaskCreate(task_sensor, "WORK_TASK", 2048, NULL, 1, &handle_task_sensor);
+    BaseType_t status_task_alert = xTaskCreate(task_alert, "ALERT_TASK", 1024, NULL, 0, &handle_task_alert);
 
     if (status_task_led == pdPASS && status_task_sensor == pdPASS && status_task_alert == pdPASS) {
         // Start the scheduler
-        server_log("Starting FreeRTOS scheduler");
         vTaskStartScheduler();
+    } else {
+        // We should never get here as control is now taken by the scheduler
+        server_error("Insufficient RAM to start default tasks");
     }
-
-    // We should never get here as control is now taken by the scheduler
-    server_error("Insufficient RAM to start default tasks");
 
     while (1) {
         // NOP
@@ -150,14 +130,14 @@ static void system_clock_config(void) {
 /**
  * @brief GPIO initialization function.
  *        This configures pin PA5, which is wired to the Nucleo's
- *        USER LED, and PF3, which is triggers an interrupt when it
+ *        USER LED, and PB11, which is triggers an interrupt when it
  *        goes high (in response to alert signal from MCP9808).
  */
-static void GPIO_init(void) {
+static void init_gpio(void) {
 
     // Enable the clock for GPIO ports A (USER LED), F (MCP9808 INT PIN)
     __HAL_RCC_GPIOA_CLK_ENABLE();
-    __HAL_RCC_GPIOD_CLK_ENABLE();
+    __HAL_RCC_GPIOB_CLK_ENABLE();
 
     // Clear the LED
     HAL_GPIO_WritePin(LED_GPIO_PORT, LED_GPIO_PIN, GPIO_PIN_RESET);
@@ -170,20 +150,24 @@ static void GPIO_init(void) {
     led_init_data.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     HAL_GPIO_Init(LED_GPIO_PORT, &led_init_data);
 
-    // Configure GPIO pin for the MCP9808 interrupt
+    // Configure GPIO pin for the MCP9808 interrupt (PD8)
     GPIO_InitTypeDef mcp_init_data = {0};
     mcp_init_data.Pin   = MCP_INT_PIN;
-    mcp_init_data.Mode  = GPIO_MODE_IT_RISING_FALLING;
+    mcp_init_data.Mode  = GPIO_MODE_IT_FALLING;
     mcp_init_data.Pull  = GPIO_NOPULL;
     HAL_GPIO_Init(MCP_GPIO_PORT, &mcp_init_data);
 
     // Set up the NVIC to process interrupts
-    HAL_NVIC_SetPriority(MCP_INT_IRQ, 3, 0);
+    // IMPORTANT FOR CORTEX-M on STM32 Use no sub-prority bits...
     HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
+
+    // ...and make sure the priority is numerically just lower than 
+    // configMAX_SYSCALL_INTERRUPT_PRIORITY (but not 0-3)
+    HAL_NVIC_SetPriority(MCP_INT_IRQ, configMAX_SYSCALL_INTERRUPT_PRIORITY -1, 0);
     HAL_NVIC_EnableIRQ(MCP_INT_IRQ);
 
-    //mvSetFastInterrupt(MCP_INT_IRQ);
-    //mvEnableFastInterrupt(MCP_INT_IRQ);
+    // FOR MORE INFORMATION, PLEASE SEE:
+    // https://www.freertos.org/RTOS-Cortex-M3-M4.html
 }
 
 
@@ -196,7 +180,7 @@ static void GPIO_init(void) {
 static void task_led(void *argument) {
 
     // Get the pause period in ticks from a millisecond value
-    const TickType_t led_pause_ticks = pdMS_TO_TICKS(DEBUG_LED_PAUSE_MS);
+    const TickType_t led_pause_ticks = pdMS_TO_TICKS(LED_FLASH_INTERVAL_MS);
 
     while(1) {
         // Toggle the NDB's USER LED
@@ -217,7 +201,7 @@ static void task_led(void *argument) {
 static void task_sensor(void *argument) {
 
     // Get the pause period in ticks from a millisecond value
-    const TickType_t ping_pause_ticks = pdMS_TO_TICKS(DEBUG_SENSOR_PAUSE_MS);
+    const TickType_t ping_pause_ticks = pdMS_TO_TICKS(SENSOR_READ_INTERVAL_MS);
 
     while(1) {
         // Output the current reading
@@ -226,7 +210,8 @@ static void task_sensor(void *argument) {
         }
 
         GPIO_PinState state = HAL_GPIO_ReadPin(MCP_GPIO_PORT, MCP_INT_PIN);
-        server_log("Current temperature: %.2f°C (%i)", current_temp, state == GPIO_PIN_SET);
+        bool asserted = MCP9808_get_alert_state();
+        server_log("Current temperature: %.2f°C (PD8 %s, ALRT %s)", current_temp, (state == GPIO_PIN_SET ? "SET" : "CLEAR"), (asserted ? "SET" : "CLEAR"));
 
         // Yield execution for a period
         vTaskDelay(ping_pause_ticks);
@@ -241,31 +226,16 @@ static void task_sensor(void *argument) {
  */
 static void task_alert(void* argument) {
 
-    while (true) {
+    while (1) {
         // Block until a notification arrives
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
-        // Show the IRQ was hit by lighting the USER LED
+        // Show the IRQ was hit
         HAL_GPIO_WritePin(LED_GPIO_PORT, LED_GPIO_PIN, GPIO_PIN_SET);
-        if (got_mcp9808) MCP9808_clear_alert(false);
-        server_log("Alert detected");
 
         // Set and start a timer to clear the alert
         set_alert_timer();
-    }
-}
-
-
-/**
- * @brief Show basic device info.
- */
-static void log_device_info(void) {
-
-    uint8_t dev_id[35] = { 0 };
-    mvGetDeviceId(dev_id, 34);
-    server_log("Device: %s", dev_id);
-    server_log("   App: %s %s", APP_NAME, APP_VERSION);
-    server_log(" Build: %i", BUILD_NUM);
+     }
 }
 
 
@@ -282,7 +252,7 @@ static void set_alert_timer(void) {
                                pdFALSE,
                                (void*)0,
                                timer_fired_callback);
-    if (alert_timer != NULL) xTimerStart(alert_timer, SENSOR_TASK_DELAY_TICKS);
+    if (alert_timer != NULL) xTimerStart(alert_timer, SENSOR_TASK_WAIT_TICKS);
 }
 
 
@@ -295,21 +265,14 @@ static void timer_fired_callback(TimerHandle_t timer) {
 
     // Check whether the alert condition has passed
     // NOTE The MCP980 does not signal this on the ALERT pin
+    current_temp = MCP9808_read_temp();
     if (current_temp < (double)TEMP_UPPER_LIMIT_C) {
-        // Clear the LED
+        // Clear the LED and the alert
         HAL_GPIO_WritePin(LED_GPIO_PORT, LED_GPIO_PIN, GPIO_PIN_RESET);
-        //alert_fired = false;
+        alert_fired = false;
 
         // Clear the timer
         alert_timer = NULL;
-
-        // Reset the MCP9808 alert mechanism
-        MCP9808_clear_alert(true);
-
-        // The alert IRQ is disabled at this point, so reenable it
-        // NOTE This has to come after the previous line, or it
-        //      will trip immediately!
-        HAL_NVIC_EnableIRQ(MCP_INT_IRQ);
     } else {
         // Temperature still too high -- restart the timer
         set_alert_timer();
@@ -320,56 +283,45 @@ static void timer_fired_callback(TimerHandle_t timer) {
 /**
  * @brief Interrupt handler as specified by the STM32U5 HAL.
  */
-void EXTI8_IRQHandler(void) {
+void EXTI11_IRQHandler(void) {
 
     HAL_GPIO_EXTI_IRQHandler(MCP_INT_PIN);
 }
 
 
 /**
- * @brief IRQ handler as specified in HAL doc.
+ * @brief IRQ handler as specified by the STM32U5 HAL.
  *
  * @param GPIO_Pin The pin the triggered the IRQ
  */
 void HAL_GPIO_EXTI_Falling_Callback(uint16_t pin) {
 
-    server_log("IRQ");
-    if (pin == MCP_INT_PIN) isr_worker();
-}
-
-
-/**
- * @brief IRQ handler as specified in HAL doc.
- *
- * @param GPIO_Pin The pin the triggered the IRQ
- */
-void HAL_GPIO_EXTI_Rising_Callback(uint16_t pin) {
-
-    server_log("IRQ");
-    if (pin == MCP_INT_PIN) isr_worker();
-}
-
-
-/**
- * @brief Common ISR code.
- */
-static inline void isr_worker(void) {
-
-    // Signal the alert clearance task
-    static BaseType_t higher_priority_task_woken = pdFALSE;
-    vTaskNotifyGiveFromISR(handle_task_alert, &higher_priority_task_woken);
-
-    // Disable the IRQ to prevent repeated alerts
-    // (we will re-enable the IRQ when the alert is over)
-    HAL_NVIC_DisableIRQ(MCP_INT_IRQ);
+    // Make sure the LED flasher task doesn't flash the LED
     alert_fired = true;
-
-    // Exit to FreeRTOS context switch if necessary
+    
+    // Signal the alert clearance task
+    // IMPORTANT Calling FreeRTOS functions from ISRs requires
+    //           close attention. Use `...FromISR()` versions of 
+    //           calls, and ensure the IRQs which trigger this
+    //           handler have a suitable priority -- see
+    //           https://www.freertos.org/RTOS-Cortex-M3-M4.html
+    //           and `init_gpio()a, above.
+    BaseType_t higher_priority_task_woken = pdFALSE;
+    vTaskNotifyGiveFromISR(handle_task_alert, &higher_priority_task_woken);
     portYIELD_FROM_ISR(higher_priority_task_woken);
 }
 
 
-void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName) {
+/**
+ * @brief Show basic device info.
+ */
+static void log_device_info(void) {
 
-    server_log("OVERFLOW: %s", pcTaskName);
+    uint8_t dev_id[35] = { 0 };
+    mvGetDeviceId(dev_id, 34);
+    server_log("Device: %s", dev_id);
+    server_log("   App: %s %s", APP_NAME, APP_VERSION);
+    server_log(" Build: %i", BUILD_NUM);
 }
+
+

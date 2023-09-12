@@ -51,10 +51,14 @@ bool MCP9808_init(void) {
     // Bytes to integers
     const uint16_t mid_value = (mid_data[0] << 8) | mid_data[1];
     const uint16_t did_value = (did_data[0] << 8) | did_data[1];
-    server_log("MCP9808 Manufacturer ID: 0x%04x, Device ID: 0x%04x", mid_value, did_value);
+    
 
     // Return false on data error
-    if (mid_value != 0x0054 || did_value != 0x0400) return false;
+    if (mid_value != 0x0054 || did_value != 0x0400) {
+        server_error("MCP9808 reported Manufacturer ID: 0x%04x, Device ID: 0x%04x", mid_value, did_value);
+        return false;
+    }
+
     return true;
 }
 
@@ -69,8 +73,8 @@ double MCP9808_read_temp(void) {
     // Read sensor and return its value in degrees celsius.
     uint8_t temp_data[2] = { 0x06, 0x30 };
     uint8_t cmd = MCP9808_REG_AMBIENT_TEMP;
-    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &cmd, 1, 200);
-    HAL_StatusTypeDef result = HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, temp_data, 2, 500);
+    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &cmd, 1, 100);
+    HAL_StatusTypeDef result = HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, temp_data, 2, 200);
 
     // Check for a read error -- if there is one, return its code
     const uint32_t temp_raw = (temp_data[0] << 8) | temp_data[1];
@@ -92,8 +96,8 @@ void MCP9808_clear_alert(bool do_enable) {
     // Read the current reg value
     uint8_t config_data[3] = {0};
     uint8_t reg = MCP9808_REG_CONFIG;
-    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &reg, 1, 200);
-    HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, &config_data[1], 2, 500);
+    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &reg, 1, 100);
+    HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, &config_data[1], 2, 200);
 
     // Set LSB bit 5 to clear the interrupt, 
     //         bit 1 to set the active high,
@@ -107,12 +111,12 @@ void MCP9808_clear_alert(bool do_enable) {
     }
 
     // Write config data back with changes
-    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, config_data, 3, 200);
+    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, config_data, 3, 100);
 
     // Read it back to apply?
     uint8_t check_data[2] = {0};
-    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &reg, 1, 200);
-    HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, check_data, 2, 500);
+    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &reg, 1, 100);
+    HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, check_data, 2, 200);
 
     // Check the two values: READ LSB == WRITE & 0xDF
     if (((config_data[2] & 0x0F) != check_data[1]) && do_enable) {
@@ -127,6 +131,7 @@ void MCP9808_clear_alert(bool do_enable) {
  * @param upper_temp: The target temperature.
  */
 void MCP9808_set_upper_limit(uint16_t upper_temp) {
+
     limit_upper = upper_temp;
     MCP9808_set_temp_limit(MCP9808_REG_UPPER_TEMP, upper_temp);
     server_log("MCP9808 Hi Temp Set: %02i", upper_temp);
@@ -139,6 +144,7 @@ void MCP9808_set_upper_limit(uint16_t upper_temp) {
  * @param critical_temp: The target temperature.
  */
 void MCP9808_set_critical_limit(uint16_t critical_temp) {
+
     limit_critical = critical_temp;
     MCP9808_set_temp_limit(MCP9808_REG_CRIT_TEMP, critical_temp);
     server_log("MCP9808 Crit Temp Set: %02i", critical_temp);
@@ -151,6 +157,7 @@ void MCP9808_set_critical_limit(uint16_t critical_temp) {
  * @param lower_temp: The target temperature.
  */
 void MCP9808_set_lower_limit(uint16_t lower_temp) {
+
     limit_lower = lower_temp;
     MCP9808_set_temp_limit(MCP9808_REG_LOWER_TEMP, lower_temp);
     server_log("MCP9808 Lo Temp Set: %02i", lower_temp);
@@ -188,4 +195,12 @@ static double MCP9808_get_temp(uint8_t* data) {
     double temp_cel = (temp_raw & 0x0FFF) / 16.0;
     if (temp_raw & 0x1000) temp_cel = 256.0 - temp_cel;
     return temp_cel;
+}
+
+bool MCP9808_get_alert_state(void) {
+
+    uint8_t config_data[3] = { MCP9808_REG_CONFIG, 0, 0 };
+    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, config_data, 1, 100);
+    HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, &config_data[1], 2, 200);
+    return ((config_data[2] & 0x10) != 0);
 }

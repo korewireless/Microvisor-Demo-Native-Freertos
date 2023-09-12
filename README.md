@@ -6,9 +6,11 @@ Unlike [our primary FreeRTOS demo](https://github.com/twilio/twilio-microvisor-f
 
 ![The Nucleo board and attached MCP9808](./images/mv-mcp9808.png)
 
-The code uses an MCP9808 temperature sensor to provide a thermal readout every 15 seconds. If the ambient temperature rises above 28°C (set in `main.h`), the MCP9808’s ALERT pin asserts, triggering an interrupt on the Microvisor Nucleo Development Board’s PF3 pin. FreeRTOS’ task notification mechanism is used to signal a specific task from the Interrupt Service Routine to light the USER LED. FreeRTOS’ timer mechanism is used to periodically check for the end of the alert condition.
+Do demostrate native FreeRTOS operation, the code uses an MCP9808 temperature sensor breakout to provide a thermal readout every 15 seconds. If the ambient temperature rises above 30°C (set in `main.h`), the MCP9808’s ALERT pin asserts, triggering an interrupt on the Microvisor Nucleo Development Board’s PB11 pin. FreeRTOS’ task notification mechanism is used to signal a specific task from the Interrupt Service Routine (ISR) to light the USER LED (it blinks periodically otherwise). 
 
-Most of the project files can be found in the [Demo/](Demo/) directory. The [ST_Code/](ST_Code/) directory contains required components that are not part of the Microvisor STM32U5 HAL, which this code accesses as a submodule. FreeRTOS is also incorporated as a submodule. The `FreeRTOSConfig.h` and `stm32u5xx_hal_conf.h` configuration files are located in the [Config/](Config/) directory.
+FreeRTOS’ timer mechanism is used periodically to check for the end of the alert condition: if the temperature has fallen below 30°C, the alert is over, otherwise a new timer is set to check again in 20 seconds' time.
+
+Most of the project files can be found in the [Demo/](Demo/) directory. The [ST_Code/](ST_Code/) directory contains required components that are not part of the Microvisor STM32U5 HAL, which this code accesses as a submodule. FreeRTOS is also incorporated as a submodule. The `FreeRTOSConfig.h` configuration file is located in the [Config/](Config/) directory.
 
 ## Build with Docker (macOS)
 
@@ -116,7 +118,7 @@ Update the repo’s submodules to their remotes’ latest commits with:
 
 ```shell
 cd /path/to/microvisor-native-freertos-demo
-git submodule update --init --remote --recursive
+git submodule update --remote --recursive
 ```
 
 ## More Samples
@@ -125,6 +127,6 @@ Please see [Microvisor Sample Code](https://www.twilio.com/docs/iot/microvisor/s
 
 ## Copyright
 
-The sample code is © 2023, KORE Wireless, Inc.
+The sample code is © 2023, KORE Wireless, Inc. It is licensed under the terms of the MIT License.
 
 FreeRTOS is © 2021, Amazon Web Services, Inc

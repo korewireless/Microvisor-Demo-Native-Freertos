@@ -14,25 +14,25 @@
  *  CONSTANTS
  */
 // Sensor I2C address
-#define MCP9808_ADDR                0x18
+#define MCP9808_ADDR                    0x18
 
 // Register addresses
-#define MCP9808_REG_CONFIG          0x01
-#define MCP9808_REG_UPPER_TEMP      0x02
-#define MCP9808_REG_LOWER_TEMP      0x03
-#define MCP9808_REG_CRIT_TEMP       0x04
-#define MCP9808_REG_AMBIENT_TEMP    0x05
-#define MCP9808_REG_MANUF_ID        0x06
-#define MCP9808_REG_DEVICE_ID       0x07
+#define MCP9808_REG_CONFIG              0x01
+#define MCP9808_REG_UPPER_TEMP          0x02
+#define MCP9808_REG_LOWER_TEMP          0x03
+#define MCP9808_REG_CRIT_TEMP           0x04
+#define MCP9808_REG_AMBIENT_TEMP        0x05
+#define MCP9808_REG_MANUF_ID            0x06
+#define MCP9808_REG_DEVICE_ID           0x07
 
-#define MCP9808_CONFIG_CLR_ALRT_INT 0x20
-#define MCP9808_CONFIG_ENABLE_ALRT  0x08
-#define MCP9808_CONFIG_ALRT_POL     0x02
-#define MCP9808_CONFIG_ALRT_MODE    0x01
+#define MCP9808_CONFIG_CLR_ALRT_INT     0x20
+#define MCP9808_CONFIG_ENABLE_ALRT      0x08
+#define MCP9808_CONFIG_ALRT_POL         0x02
+#define MCP9808_CONFIG_ALRT_MODE        0x01
 
-#define DEFAULT_TEMP_LOWER_LIMIT_C  10
-#define DEFAULT_TEMP_UPPER_LIMIT_C  28
-#define DEFAULT_TEMP_CRIT_LIMIT_C   50
+#define DEFAULT_TEMP_LOWER_LIMIT_C      10
+#define DEFAULT_TEMP_UPPER_LIMIT_C      30
+#define DEFAULT_TEMP_CRIT_LIMIT_C       50
 
 
 #ifdef __cplusplus
@@ -49,6 +49,7 @@ void        MCP9808_clear_alert(bool do_enable);
 void        MCP9808_set_upper_limit(uint16_t upper_temp);
 void        MCP9808_set_critical_limit(uint16_t critical_temp);
 void        MCP9808_set_lower_limit(uint16_t lower_temp);
+bool        MCP9808_get_alert_state(void);
 
 
 #ifdef __cplusplus

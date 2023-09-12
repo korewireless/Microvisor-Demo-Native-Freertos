@@ -7,7 +7,8 @@
     "settings": {
         "files.associations": {
             "*.txt": "plaintext",
-            "queue": "c"
+            "queue": "c",
+            "stm32u585xx.h": "c"
         }
     }
 }
