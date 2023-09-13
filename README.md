@@ -10,7 +10,7 @@ Do demostrate native FreeRTOS operation, the code uses an MCP9808 temperature se
 
 FreeRTOS’ timer mechanism is used periodically to check for the end of the alert condition: if the temperature has fallen below 30°C, the alert is over, otherwise a new timer is set to check again in 20 seconds' time.
 
-The MCP9808 alert pin is free-floating and must be connected to 3V3 via a pull-up resistor, such as 22k&omega;. An alert will pull this low; the falling signal is detected as an interrupt trigger on the SMT32U585 GPIO pin (PB11) connected to the MCP980 alert pin.
+The MCP9808 alert pin is free-floating and must be connected to 3V3 via a pull-up resistor, such as 22k&Omega;. An alert will pull this low; the falling signal is detected as an interrupt trigger on the SMT32U585 GPIO pin (PB11) connected to the MCP980 alert pin.
 
 Most of the project files can be found in the [Demo/](Demo/) directory. The [ST_Code/](ST_Code/) directory contains required components that are not part of the Microvisor STM32U5 HAL, which this code accesses as a submodule. FreeRTOS is also incorporated as a submodule. The `FreeRTOSConfig.h` configuration file is located in the [Config/](Config/) directory.
 
