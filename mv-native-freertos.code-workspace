@@ -8,7 +8,8 @@
         "files.associations": {
             "*.txt": "plaintext",
             "queue": "c",
-            "stm32u585xx.h": "c"
+            "stm32u585xx.h": "c",
+            "app_version.h": "c"
         }
     }
 }

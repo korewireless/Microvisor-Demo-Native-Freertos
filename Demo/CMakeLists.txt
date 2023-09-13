@@ -3,13 +3,13 @@ cmake_minimum_required(VERSION 3.14)
 # Set application data
 set(APP "Microvisor Native FreeRTOS Demo")
 set(VERSION_NUMBER "1.0.0")
-set(BUILD_NUMBER "1")
+set(BUILD_NUMBER "6")
 
 message("Building ${APP} ${VERSION_NUMBER} build ${BUILD_NUMBER}")
 
 # Pass in version data
-configure_file(app_version.in app_version.h)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+configure_file(app_version.in app_version.h @ONLY)
 
 # Compile app source code file(s)
 add_executable(${PROJECT_NAME}
@@ -27,7 +27,7 @@ target_link_libraries(${PROJECT_NAME} LINK_PUBLIC
     FreeRTOS
 )
 
-# Optional informational and additional format generation
+# Output additional artefacts and format the output binary
 add_custom_command(OUTPUT EXTRA_FILES DEPENDS ${PROJECT_NAME}
     COMMAND mv "${PROJECT_NAME}" "${PROJECT_NAME}.elf"
     COMMAND ${CMAKE_SIZE} --format=berkeley "${PROJECT_NAME}.elf"

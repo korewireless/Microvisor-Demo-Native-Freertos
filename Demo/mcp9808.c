@@ -52,7 +52,6 @@ bool MCP9808_init(void) {
     const uint16_t mid_value = (mid_data[0] << 8) | mid_data[1];
     const uint16_t did_value = (did_data[0] << 8) | did_data[1];
     
-
     // Return false on data error
     if (mid_value != 0x0054 || did_value != 0x0400) {
         server_error("MCP9808 reported Manufacturer ID: 0x%04x, Device ID: 0x%04x", mid_value, did_value);
@@ -94,20 +93,16 @@ double MCP9808_read_temp(void) {
 void MCP9808_clear_alert(bool do_enable) {
 
     // Read the current reg value
-    uint8_t config_data[3] = {0};
-    uint8_t reg = MCP9808_REG_CONFIG;
-    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &reg, 1, 100);
+    uint8_t config_data[3] = { MCP9808_REG_CONFIG, 0, 0 };
+    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, config_data, 1, 100);
     HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, &config_data[1], 2, 200);
 
-    // Set LSB bit 5 to clear the interrupt, 
-    //         bit 1 to set the active high,
-    //         bit 0 to set the interrupt mode
-    config_data[0] = reg;
-    //config_data[2] = 0x20;
-    // MCP9808_CONFIG_CLR_ALRT_INT | 
-    // Enable/disable the alert
+    // Clear the alert (clear bit 5)
+    config_data[2] &= MCP9808_CONFIG_CLEAR_ALERT;
+    
+    // Enable/disable the alert (bit 4)
     if (do_enable) {
-        config_data[2] |= MCP9808_CONFIG_ENABLE_ALRT;
+        config_data[2] |= MCP9808_CONFIG_ENABLE_ALERT;
     }
 
     // Write config data back with changes
@@ -115,7 +110,7 @@ void MCP9808_clear_alert(bool do_enable) {
 
     // Read it back to apply?
     uint8_t check_data[2] = {0};
-    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, &reg, 1, 100);
+    HAL_I2C_Master_Transmit(&i2c, MCP9808_ADDR << 1, config_data, 1, 100);
     HAL_I2C_Master_Receive(&i2c, MCP9808_ADDR << 1, check_data, 2, 200);
 
     // Check the two values: READ LSB == WRITE & 0xDF
@@ -134,7 +129,7 @@ void MCP9808_set_upper_limit(uint16_t upper_temp) {
 
     limit_upper = upper_temp;
     MCP9808_set_temp_limit(MCP9808_REG_UPPER_TEMP, upper_temp);
-    server_log("MCP9808 Hi Temp Set: %02i", upper_temp);
+    server_log("MCP9808 Hi Temp Set: %02i°C", upper_temp);
 }
 
 
@@ -147,7 +142,7 @@ void MCP9808_set_critical_limit(uint16_t critical_temp) {
 
     limit_critical = critical_temp;
     MCP9808_set_temp_limit(MCP9808_REG_CRIT_TEMP, critical_temp);
-    server_log("MCP9808 Crit Temp Set: %02i", critical_temp);
+    server_log("MCP9808 Crit Temp Set: %02i°C", critical_temp);
 }
 
 
@@ -160,7 +155,7 @@ void MCP9808_set_lower_limit(uint16_t lower_temp) {
 
     limit_lower = lower_temp;
     MCP9808_set_temp_limit(MCP9808_REG_LOWER_TEMP, lower_temp);
-    server_log("MCP9808 Lo Temp Set: %02i", lower_temp);
+    server_log("MCP9808 Lo Temp Set: %02i°C", lower_temp);
 }
 
 
@@ -187,7 +182,7 @@ static void MCP9808_set_temp_limit(uint8_t temp_register, uint16_t temp) {
 /**
  * @brief Calculate the temperature.
  *
- * @retval The temperature in Celsius.
+ * @returns The temperature in Celsius.
  */
 static double MCP9808_get_temp(uint8_t* data) {
 
@@ -197,6 +192,13 @@ static double MCP9808_get_temp(uint8_t* data) {
     return temp_cel;
 }
 
+
+/**
+ * @brief ALert state checker, used for debugging.
+ * 
+ * @returns `true` if the config register indicates an alert has been triggered,
+ *          otherwise `false`.
+ */
 bool MCP9808_get_alert_state(void) {
 
     uint8_t config_data[3] = { MCP9808_REG_CONFIG, 0, 0 };

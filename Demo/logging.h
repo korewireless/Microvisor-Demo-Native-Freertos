@@ -6,8 +6,8 @@
  * Licence: MIT
  *
  */
-#ifndef LOGGING_H
-#define LOGGING_H
+#ifndef LOGGING_HEADER
+#define LOGGING_HEADER
 
 
 /*
@@ -34,9 +34,9 @@ extern "C" {
 /*
  * PROTOTYPES
  */
-void            server_log(char* format_string, ...);
-void            server_error(char* format_string, ...);
-void            do_assert(bool condition, char* message);
+void    server_log(char* format_string, ...);
+void    server_error(char* format_string, ...);
+void    do_assert(bool condition, char* message);
 
 
 #ifdef __cplusplus
@@ -44,4 +44,4 @@ void            do_assert(bool condition, char* message);
 #endif
 
 
-#endif /* LOGGING_H */
+#endif  // LOGGING_HEADER

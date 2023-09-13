@@ -31,6 +31,7 @@ extern UART_HandleTypeDef uart;
 static bool uart_available = false;
 #endif
 
+
 /**
  * @brief  Open a logging channel.
  *

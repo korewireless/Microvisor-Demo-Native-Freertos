@@ -5,6 +5,10 @@
  * Copyright © 2023, KORE Wireless
  * Licence: MIT
  *
+ * This filae is read by CMake and used as the basis
+ * for the `app_version.h` file imported by `main.c`
+ * and only `main.c` to minimize compile time on
+ * new builds.
  */
 #define APP_NAME        "@APP@"
 #define APP_VERSION     "@VERSION_NUMBER@"

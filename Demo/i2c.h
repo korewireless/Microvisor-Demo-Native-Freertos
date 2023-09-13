@@ -6,8 +6,8 @@
  * Licence: MIT
  *
  */
-#ifndef _I2C_HEADER_
-#define _I2C_HEADER_
+#ifndef I2C_HEADER
+#define I2C_HEADER
 
 
 #ifdef __cplusplus
@@ -26,4 +26,4 @@ bool I2C_init(void);
 #endif
 
 
-#endif  // _I2C_HEADER_
+#endif  // I2C_HEADER

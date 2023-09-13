@@ -23,8 +23,10 @@ I2C_HandleTypeDef   i2c;
 
 /**
  * @brief Initialize STM32U585 I2C1.
+ *        NOTE Pins are configured in the HAL callback function
+ *             `HAL_I2C_MspInit()`.
  *
- * @retval `true` if initialization succeeded, otherwise `false`.
+ * @returns `true` if initialization succeeded, otherwise `false`.
  */
 bool I2C_init(void) {
 
@@ -32,7 +34,7 @@ bool I2C_init(void) {
     //   SDA -> PB9
     //   SCL -> PB6
     i2c.Instance              = I2C1;
-    i2c.Init.Timing           = 0x00C01F67;  // FROM ST SAMPLE
+    i2c.Init.Timing           = 0x00C01F67;  // 400kHz, FROM ST SAMPLE
     i2c.Init.AddressingMode   = I2C_ADDRESSINGMODE_7BIT;
     i2c.Init.DualAddressMode  = I2C_DUALADDRESS_DISABLE;
     i2c.Init.OwnAddress1      = 0x00;
@@ -89,13 +91,13 @@ static bool I2C_check(uint8_t target_address) {
 
 
 /**
- * @brief HAL-called function to configure I2C.
+ * @brief HAL-called function to complete I2C configuration.
+ *        Configure your I2C pins here.
+ *        This is called by `HAL_I2C_Init()`.
  *
  * @param i2c: A HAL I2C_HandleTypeDef pointer to the I2C instance.
  */
 void HAL_I2C_MspInit(I2C_HandleTypeDef *i2c) {
-
-    // This SDK-named function is called by HAL_I2C_Init()
 
     // Configure U5 peripheral clock
     RCC_PeriphCLKInitTypeDef PeriphClkInit = { 0 };

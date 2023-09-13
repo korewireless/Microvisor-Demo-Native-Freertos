@@ -107,7 +107,7 @@ int main(void) {
 /**
  * @brief Get the Microvisor clock reading.
  *
- * @retval The clock value.
+ * @returns The clock value.
  */
 uint32_t SECURE_SystemCoreClockUpdate() {
 
@@ -150,7 +150,7 @@ static void init_gpio(void) {
     led_init_data.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
     HAL_GPIO_Init(LED_GPIO_PORT, &led_init_data);
 
-    // Configure GPIO pin for the MCP9808 interrupt (PD8)
+    // Configure GPIO pin for the MCP9808 interrupt
     GPIO_InitTypeDef mcp_init_data = {0};
     mcp_init_data.Pin   = MCP_INT_PIN;
     mcp_init_data.Mode  = GPIO_MODE_IT_FALLING;
@@ -209,9 +209,7 @@ static void task_sensor(void *argument) {
             current_temp = MCP9808_read_temp();
         }
 
-        GPIO_PinState state = HAL_GPIO_ReadPin(MCP_GPIO_PORT, MCP_INT_PIN);
-        bool asserted = MCP9808_get_alert_state();
-        server_log("Current temperature: %.2f°C (PD8 %s, ALRT %s)", current_temp, (state == GPIO_PIN_SET ? "SET" : "CLEAR"), (asserted ? "SET" : "CLEAR"));
+        server_log("Current temperature: %.2f°C", current_temp);
 
         // Yield execution for a period
         vTaskDelay(ping_pause_ticks);
