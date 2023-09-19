@@ -1,7 +1,7 @@
 /**
  *
  * Microvisor Native FreeRTOS Demo
- * Version 1.0.0
+ *
  * Copyright © 2023, KORE Wireless
  * Licence: MIT
  *

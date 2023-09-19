@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.14)
 
 # Set application data
 set(APP "Microvisor Native FreeRTOS Demo")
-set(VERSION_NUMBER "1.0.0")
-set(BUILD_NUMBER "6")
+set(VERSION_NUMBER "1.0.1")
+set(BUILD_NUMBER "1")
 
 message("Building ${APP} ${VERSION_NUMBER} build ${BUILD_NUMBER}")
 
