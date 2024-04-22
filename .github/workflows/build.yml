@@ -2,20 +2,64 @@ on:
   push:
   pull_request:
   workflow_dispatch:
-  schedule:
-    - cron: '0 18 * * *'
-
 jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - name: Check out code
-      uses: actions/checkout@v3
+    - name: Get application code
+      uses: actions/checkout@v4
       with:
         submodules: 'recursive'
-    - name: Build docker image
-      run: docker build --build-arg UID=$(id -u) --build-arg GID=$(id -g) -t microvisor-sample-image .
+    - name: Get Pre-reqs
+      run: DEBIAN_FRONTEND=noninteractive && sudo apt-get update -qq && sudo apt-get install -yqq gcc-arm-none-eabi binutils-arm-none-eabi build-essential libsecret-1-dev cmake curl git
+    - name: Build application code
+      run: cmake -S . -B build && cmake --build build
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: mv-freertos-native-demo-linux-native
+        path: ${{ github.workspace }}/build/Demo/native_freertos_demo.*
+        if-no-files-found: error  build_mac_native:
+    name: Build on macOS with native tooling
+    runs-on: macos-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+    - name: Get Pre-reqs
+      run: brew install --cask gcc-arm-embedded
     - name: Build code
-      run: docker run --rm -v $(pwd)/:/home/mvisor/project/ --env BUILD_ONLY=true --name microvisor-sample microvisor-sample-image
-
+      run: cmake -S . -B build && cmake --build build
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: mv-freertos-native-demo-mac-native
+        path: ${{ github.workspace }}/build/Demo/native_freertos_demo.*
+        if-no-files-found: error
+  build_win_wsl:
+    name: Build on Windows with WSL
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: wsl-bash {0}
+    steps:
+    - name: Get WSL
+      uses: Vampire/setup-wsl@v3
+      with:
+        distribution: Ubuntu-20.04
+    - name: Get application code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+    - name: Get Pre-reqs
+      run: DEBIAN_FRONTEND=noninteractive && sudo apt-get update -qq && apt-get install -yqq gcc-arm-none-eabi binutils-arm-none-eabi build-essential libsecret-1-dev cmake curl git
+    - name: Build code
+      run: cmake -S . -B build && cmake --build build
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: mv-freertos-native-demo-win-wsl
+        path: ${{ github.workspace }}/build/Demo/native_freertos_demo.*
+        if-no-files-found: error
