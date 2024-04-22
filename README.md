@@ -6,7 +6,7 @@ Unlike [our primary FreeRTOS demo](https://github.com/twilio/twilio-microvisor-f
 
 ![The Nucleo board and attached MCP9808](./images/mv-mcp9808.png)
 
-Do demostrate native FreeRTOS operation, the code uses an MCP9808 temperature sensor breakout to provide a thermal readout every 15 seconds. If the ambient temperature rises above 30°C (set in `main.h`), the MCP9808’s ALERT pin asserts, triggering an interrupt on the Microvisor Nucleo Development Board’s PB11 pin. FreeRTOS’ task notification mechanism is used to signal a specific task from the Interrupt Service Routine (ISR) to light the USER LED (it blinks periodically otherwise). 
+Do demostrate native FreeRTOS operation, the code uses an MCP9808 temperature sensor breakout to provide a thermal readout every 15 seconds. If the ambient temperature rises above 30°C (set in `main.h`), the MCP9808’s ALERT pin asserts, triggering an interrupt on the Microvisor Nucleo Development Board’s PB11 pin. FreeRTOS’ task notification mechanism is used to signal a specific task from the Interrupt Service Routine (ISR) to light the USER LED (it blinks periodically otherwise).
 
 FreeRTOS’ timer mechanism is used periodically to check for the end of the alert condition: if the temperature has fallen below 30°C, the alert is over, otherwise a new timer is set to check again in 20 seconds' time.
 
@@ -129,6 +129,6 @@ Please see [Microvisor Sample Code](https://www.twilio.com/docs/iot/microvisor/s
 
 ## Copyright
 
-The sample code is © 2023, KORE Wireless, Inc. It is licensed under the terms of the MIT License.
+The sample code is © 2024, KORE Wireless, Inc. It is licensed under the terms of the MIT License.
 
 FreeRTOS is © 2021, Amazon Web Services, Inc

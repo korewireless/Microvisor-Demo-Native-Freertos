@@ -2,7 +2,7 @@
  *
  * Microvisor Native FreeRTOS Demo
  *
- * Copyright © 2023, KORE Wireless
+ * Copyright © 2024, KORE Wireless
  * Licence: MIT
  *
  */
@@ -51,7 +51,7 @@ bool MCP9808_init(void) {
     // Bytes to integers
     const uint16_t mid_value = (mid_data[0] << 8) | mid_data[1];
     const uint16_t did_value = (did_data[0] << 8) | did_data[1];
-    
+
     // Return false on data error
     if (mid_value != 0x0054 || did_value != 0x0400) {
         server_error("MCP9808 reported Manufacturer ID: 0x%04x, Device ID: 0x%04x", mid_value, did_value);
@@ -99,7 +99,7 @@ void MCP9808_clear_alert(bool do_enable) {
 
     // Clear the alert (clear bit 5)
     config_data[2] &= MCP9808_CONFIG_CLEAR_ALERT;
-    
+
     // Enable/disable the alert (bit 4)
     if (do_enable) {
         config_data[2] |= MCP9808_CONFIG_ENABLE_ALERT;
@@ -195,7 +195,7 @@ static double MCP9808_get_temp(uint8_t* data) {
 
 /**
  * @brief ALert state checker, used for debugging.
- * 
+ *
  * @returns `true` if the config register indicates an alert has been triggered,
  *          otherwise `false`.
  */

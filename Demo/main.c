@@ -2,7 +2,7 @@
  *
  * Microvisor Native FreeRTOS Demo
  *
- * Copyright © 2023, KORE Wireless
+ * Copyright © 2024, KORE Wireless
  * Licence: MIT
  *
  */
@@ -161,7 +161,7 @@ static void init_gpio(void) {
     // IMPORTANT FOR CORTEX-M on STM32 Use no sub-prority bits...
     HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_4);
 
-    // ...and make sure the priority is numerically just lower than 
+    // ...and make sure the priority is numerically just lower than
     // configMAX_SYSCALL_INTERRUPT_PRIORITY (but not 0-3)
     HAL_NVIC_SetPriority(MCP_INT_IRQ, configMAX_SYSCALL_INTERRUPT_PRIORITY -1, 0);
     HAL_NVIC_EnableIRQ(MCP_INT_IRQ);
@@ -296,10 +296,10 @@ void HAL_GPIO_EXTI_Falling_Callback(uint16_t pin) {
 
     // Make sure the LED flasher task doesn't flash the LED
     alert_fired = true;
-    
+
     // Signal the alert clearance task
     // IMPORTANT Calling FreeRTOS functions from ISRs requires
-    //           close attention. Use `...FromISR()` versions of 
+    //           close attention. Use `...FromISR()` versions of
     //           calls, and ensure the IRQs which trigger this
     //           handler have a suitable priority -- see
     //           https://www.freertos.org/RTOS-Cortex-M3-M4.html
