@@ -21,6 +21,24 @@ jobs:
         name: mv-freertos-native-demo-linux-native
         path: ${{ github.workspace }}/build/Demo/native_freertos_demo.*
         if-no-files-found: error
+  build_linux_docker:
+    name: Build on Linux with Docker
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get application code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+    - name: Build Docker image
+      run: docker build --build-arg UID=$(id -u) --build-arg GID=$(id -g) -t mv-iot-image-lin-dock .
+    - name: Build application code
+      run: docker run --rm -v $(pwd)/:/home/mvisor/project/ --env BUILD_ONLY=true --name mv-iot-lin-dock mv-iot-image-lin-dock
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: mv-iot-demo-linux-docker
+        path: ${{ github.workspace }}/build/Demo/native_freertos_demo.*
+        if-no-files-found: error
   build_mac_native:
     name: Build on macOS with native tooling
     runs-on: macos-latest
